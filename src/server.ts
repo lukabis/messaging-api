@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { auth } from "express-oauth2-jwt-bearer";
 
@@ -19,8 +19,8 @@ const checkJwt = auth({
   audience: process.env.AUTH0_AUDIENCE,
 });
 
-app.get("/api/protected", checkJwt, async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
+app.get("/api/protected", checkJwt, async (req: Request, res: Response) => {
+  const token = req.headers.authorization!.split(" ")[1];
   const userInfoRes = await fetch(`https://${process.env.AUTH0_DOMAIN}/userinfo`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -29,7 +29,7 @@ app.get("/api/protected", checkJwt, async (req, res) => {
   res.status(200).json({ message: "Protected resource accessed successfully" });
 });
 
-app.use((err, req, res, next) => {
+app.use((err: Error & { code?: string }, req: Request, res: Response, next: NextFunction) => {
   if (err.code === "invalid_token") {
     return res.status(401).json({ error: "Invalid or missing token" });
   }
