@@ -19,7 +19,7 @@ const checkJwt = auth({
   audience: process.env.AUTH0_AUDIENCE,
 });
 
-app.get("/api/protected", checkJwt, async (req: Request, res: Response) => {
+app.get("/api/user", checkJwt, async (req: Request, res: Response) => {
   const token = req.headers.authorization!.split(" ")[1];
   const userInfoRes = await fetch(`https://${process.env.AUTH0_DOMAIN}/userinfo`, {
     headers: { Authorization: `Bearer ${token}` },
