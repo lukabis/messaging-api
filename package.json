@@ -9,7 +9,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -26,6 +28,7 @@
     "@types/pg": "^8.18.0",
     "drizzle-kit": "^0.31.10",
     "nodemon": "^3.1.4",
+    "prettier": "^3.8.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
