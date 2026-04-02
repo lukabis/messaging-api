@@ -21,6 +21,8 @@ services:
     image: postgres:17-alpine
     container_name: messaging-api-db
     restart: unless-stopped
+    env_file:
+      - .env.prod
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
