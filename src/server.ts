@@ -24,6 +24,10 @@ const checkJwt = auth({
   audience: process.env.AUTH0_AUDIENCE,
 });
 
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ status: "ok" });
+});
+
 app.get("/api/user", checkJwt, async (req: Request, res: Response) => {
   const token = req.headers.authorization!.split(" ")[1];
   const userInfoRes = await fetch(`https://${process.env.AUTH0_DOMAIN}/userinfo`, {
