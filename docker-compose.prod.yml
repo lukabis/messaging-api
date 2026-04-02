@@ -15,7 +15,7 @@ services:
         condition: service_healthy
     networks:
       - internal
-      - proxy
+      - novex-app_proxy-network
 
   db:
     image: postgres:17-alpine
@@ -37,7 +37,7 @@ services:
 
 networks:
   internal:
-  proxy:
+  novex-app_proxy-network:
     external: true
 
 volumes:
