@@ -35,15 +35,16 @@ app.get("/api/user", checkJwt, async (req: Request, res: Response) => {
   });
   const { sub, email, given_name, family_name } = await userInfoRes.json();
 
-  await db
+  const [user] = await db
     .insert(users)
     .values({ sub, email, firstName: given_name ?? null, lastName: family_name ?? null })
     .onConflictDoUpdate({
       target: users.sub,
       set: { email, firstName: given_name ?? null, lastName: family_name ?? null },
-    });
+    })
+    .returning();
 
-  res.status(200).json({ message: "Protected resource accessed successfully" });
+  res.status(200).json(user);
 });
 
 app.use((err: Error & { code?: string }, _req: Request, res: Response, next: NextFunction) => {
