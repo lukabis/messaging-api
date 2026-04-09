@@ -5,6 +5,6 @@ export const users = pgTable("users", {
   email: text("email").notNull(),
   firstName: text("first_name"),
   lastName: text("last_name"),
-  username: text("username"),
+  username: text("username").unique(),
   onboarded: boolean("onboarded").default(false),
 });

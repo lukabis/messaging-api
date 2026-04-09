@@ -3,6 +3,7 @@ import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { auth } from "express-oauth2-jwt-bearer";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { eq } from "drizzle-orm";
 import { db } from "./db.js";
 import { users } from "./schema.js";
 
@@ -35,16 +36,45 @@ app.get("/api/user", checkJwt, async (req: Request, res: Response) => {
   });
   const { sub, email, given_name, family_name } = await userInfoRes.json();
 
-  const [user] = await db
+  let [user] = await db
     .insert(users)
     .values({ sub, email, firstName: given_name ?? null, lastName: family_name ?? null })
-    .onConflictDoUpdate({
-      target: users.sub,
-      set: { email, firstName: given_name ?? null, lastName: family_name ?? null },
-    })
+    .onConflictDoNothing()
     .returning();
 
+  if (!user) {
+    [user] = await db.select().from(users).where(eq(users.sub, sub));
+  }
+
   res.status(200).json(user);
+});
+
+app.patch("/api/user", checkJwt, async (req: Request, res: Response) => {
+  const { firstName, lastName, username } = req.body;
+
+  if (!firstName || !lastName || !username) {
+    return res.status(400).json({ error: "First name, last name and username are required" });
+  }
+  if ([firstName, lastName, username].some((v) => v.length < 3)) {
+    return res.status(400).json({ error: "Each field must be at least 3 characters" });
+  }
+
+  const sub = req.auth!.payload.sub!;
+
+  try {
+    const [user] = await db
+      .update(users)
+      .set({ firstName, lastName, username })
+      .where(eq(users.sub, sub))
+      .returning();
+
+    res.status(200).json(user);
+  } catch (err: any) {
+    if (err.constraint === "users_username_unique") {
+      return res.status(409).json({ error: "Username already taken" });
+    }
+    throw err;
+  }
 });
 
 app.use((err: Error & { code?: string }, _req: Request, res: Response, next: NextFunction) => {
