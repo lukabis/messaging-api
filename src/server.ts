@@ -50,7 +50,14 @@ app.get("/api/user", checkJwt, async (req: Request, res: Response) => {
 });
 
 app.patch("/api/user", checkJwt, async (req: Request, res: Response) => {
-  const { firstName, lastName, username } = req.body;
+  const { firstName, lastName, username, onboarded: rawOnboarded } = req.body;
+
+  let onboarded: boolean | undefined;
+  if (rawOnboarded !== undefined) {
+    if (rawOnboarded === true || rawOnboarded === "true") onboarded = true;
+    else if (rawOnboarded === false || rawOnboarded === "false") onboarded = false;
+    else return res.status(400).json({ error: "onboarded must be a boolean" });
+  }
 
   if (!firstName || !lastName || !username) {
     return res.status(400).json({ error: "First name, last name and username are required" });
@@ -64,7 +71,7 @@ app.patch("/api/user", checkJwt, async (req: Request, res: Response) => {
   try {
     const [user] = await db
       .update(users)
-      .set({ firstName, lastName, username })
+      .set({ firstName, lastName, username, ...(onboarded !== undefined && { onboarded }) })
       .where(eq(users.sub, sub))
       .returning();
 
