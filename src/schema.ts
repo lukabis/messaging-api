@@ -7,4 +7,5 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   username: text("username").unique(),
   onboarded: boolean("onboarded").default(false),
+  profileImage: text("profile_image"),
 });

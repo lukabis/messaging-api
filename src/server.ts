@@ -4,8 +4,31 @@ import cors from "cors";
 import { auth } from "express-oauth2-jwt-bearer";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { eq } from "drizzle-orm";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { db } from "./db.js";
 import { users } from "./schema.js";
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, "uploads/"),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  fileFilter: (_req, file, cb) => {
+    if (["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Images only"));
+    }
+  },
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 await migrate(db, { migrationsFolder: "./migrations" });
 
@@ -19,6 +42,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
 const checkJwt = auth({
   issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}`,
@@ -55,7 +79,7 @@ app.get("/api/user", checkJwt, async (req: Request, res: Response) => {
   res.status(200).json(user);
 });
 
-app.patch("/api/user", checkJwt, async (req: Request, res: Response) => {
+app.patch("/api/user", checkJwt, upload.single("profileImage"), async (req: Request, res: Response) => {
   const { firstName, lastName, username, onboarded: rawOnboarded } = req.body;
 
   let onboarded: boolean | undefined;
@@ -73,13 +97,30 @@ app.patch("/api/user", checkJwt, async (req: Request, res: Response) => {
   }
 
   const sub = req.auth!.payload.sub!;
+  const profileImage = req.file ? `/uploads/${req.file.filename}` : undefined;
 
   try {
+    let oldProfileImage: string | null = null;
+    if (profileImage) {
+      const [current] = await db.select({ profileImage: users.profileImage }).from(users).where(eq(users.sub, sub));
+      oldProfileImage = current?.profileImage ?? null;
+    }
+
     const [user] = await db
       .update(users)
-      .set({ firstName, lastName, username, ...(onboarded !== undefined && { onboarded }) })
+      .set({
+        firstName,
+        lastName,
+        username,
+        ...(onboarded !== undefined && { onboarded }),
+        ...(profileImage !== undefined && { profileImage }),
+      })
       .where(eq(users.sub, sub))
       .returning();
+
+    if (oldProfileImage) {
+      fs.unlink(path.join("uploads", path.basename(oldProfileImage)), () => {});
+    }
 
     res.status(200).json(user);
   } catch (err: any) {
@@ -94,6 +135,11 @@ app.use((err: Error & { code?: string }, _req: Request, res: Response, next: Nex
   if (err.code === "invalid_token") {
     return res.status(401).json({ error: "Invalid or missing token" });
   }
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "File too large. Max 5MB." });
+    return res.status(400).json({ error: err.message });
+  }
+  if (err.message === "Images only") return res.status(400).json({ error: "Images only" });
   next(err);
 });
 
