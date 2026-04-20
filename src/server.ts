@@ -34,7 +34,13 @@ app.get("/api/user", checkJwt, async (req: Request, res: Response) => {
   const userInfoRes = await fetch(`https://${process.env.AUTH0_DOMAIN}/userinfo`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  const { sub, email, given_name, family_name } = await userInfoRes.json();
+  const userInfo = await userInfoRes.json();
+
+  if (!userInfo.sub) {
+    return res.status(401).json({ error: "Unable to fetch user info" });
+  }
+  
+  const { sub, email, given_name, family_name } = userInfo;
 
   let [user] = await db
     .insert(users)
