@@ -10,6 +10,15 @@ import fs from "fs";
 import { db } from "./db.js";
 import { users } from "./schema.js";
 
+async function cleanupFile(file: Express.Multer.File | undefined): Promise<void> {
+  if (!file?.path) return;
+  try {
+    await fs.promises.unlink(file.path);
+  } catch (err) {
+    console.error(`Failed to cleanup file: ${file.path}`, err);
+  }
+}
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, "uploads/"),
   filename: (_req, file, cb) => {
@@ -86,13 +95,18 @@ app.patch("/api/user", checkJwt, upload.single("profileImage"), async (req: Requ
   if (rawOnboarded !== undefined) {
     if (rawOnboarded === true || rawOnboarded === "true") onboarded = true;
     else if (rawOnboarded === false || rawOnboarded === "false") onboarded = false;
-    else return res.status(400).json({ error: "onboarded must be a boolean" });
+    else {
+      await cleanupFile(req.file);
+      return res.status(400).json({ error: "onboarded must be a boolean" });
+    }
   }
 
   if (!firstName || !lastName || !username) {
+    await cleanupFile(req.file);
     return res.status(400).json({ error: "First name, last name and username are required" });
   }
   if ([firstName, lastName, username].some((v) => v.length < 3)) {
+    await cleanupFile(req.file);
     return res.status(400).json({ error: "Each field must be at least 3 characters" });
   }
 
@@ -125,6 +139,7 @@ app.patch("/api/user", checkJwt, upload.single("profileImage"), async (req: Requ
     res.status(200).json(user);
   } catch (err: any) {
     if (err.constraint === "users_username_unique") {
+      await cleanupFile(req.file);
       return res.status(409).json({ error: "Username already taken" });
     }
     throw err;
