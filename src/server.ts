@@ -73,16 +73,16 @@ app.get("/api/user", checkJwt, async (req: Request, res: Response) => {
     return res.status(401).json({ error: "Unable to fetch user info" });
   }
   
-  const { sub, email, given_name, family_name } = userInfo;
+  const { sub: id, email, given_name, family_name } = userInfo;
 
   let [user] = await db
     .insert(users)
-    .values({ sub, email, firstName: given_name ?? null, lastName: family_name ?? null })
+    .values({ id, email, firstName: given_name ?? null, lastName: family_name ?? null })
     .onConflictDoNothing()
     .returning();
 
   if (!user) {
-    [user] = await db.select().from(users).where(eq(users.sub, sub));
+    [user] = await db.select().from(users).where(eq(users.id, id));
   }
 
   res.status(200).json(user);
@@ -110,13 +110,13 @@ app.patch("/api/user", checkJwt, upload.single("profileImage"), async (req: Requ
     return res.status(400).json({ error: "Each field must be at least 3 characters" });
   }
 
-  const sub = req.auth!.payload.sub!;
+  const id = req.auth!.payload.sub!;
   const profileImage = req.file ? `/uploads/${req.file.filename}` : undefined;
 
   try {
     let oldProfileImage: string | null = null;
     if (profileImage) {
-      const [current] = await db.select({ profileImage: users.profileImage }).from(users).where(eq(users.sub, sub));
+      const [current] = await db.select({ profileImage: users.profileImage }).from(users).where(eq(users.id, id));
       oldProfileImage = current?.profileImage ?? null;
     }
 
@@ -129,7 +129,7 @@ app.patch("/api/user", checkJwt, upload.single("profileImage"), async (req: Requ
         ...(onboarded !== undefined && { onboarded }),
         ...(profileImage !== undefined && { profileImage }),
       })
-      .where(eq(users.sub, sub))
+      .where(eq(users.id, id))
       .returning();
 
     if (oldProfileImage) {
