@@ -64,60 +64,68 @@ userRouter.get("/user", checkJwt, async (req: Request, res: Response) => {
   res.status(200).json(user);
 });
 
-userRouter.patch("/user", checkJwt, upload.single("profileImage"), async (req: Request, res: Response) => {
-  const { firstName, lastName, username, onboarded: rawOnboarded } = req.body;
+userRouter.patch(
+  "/user",
+  checkJwt,
+  upload.single("profileImage"),
+  async (req: Request, res: Response) => {
+    const { firstName, lastName, username, onboarded: rawOnboarded } = req.body;
 
-  let onboarded: boolean | undefined;
-  if (rawOnboarded !== undefined) {
-    if (rawOnboarded === true || rawOnboarded === "true") onboarded = true;
-    else if (rawOnboarded === false || rawOnboarded === "false") onboarded = false;
-    else {
+    let onboarded: boolean | undefined;
+    if (rawOnboarded !== undefined) {
+      if (rawOnboarded === true || rawOnboarded === "true") onboarded = true;
+      else if (rawOnboarded === false || rawOnboarded === "false") onboarded = false;
+      else {
+        await cleanupFile(req.file);
+        return res.status(400).json({ error: "onboarded must be a boolean" });
+      }
+    }
+
+    if (!firstName || !lastName || !username) {
       await cleanupFile(req.file);
-      return res.status(400).json({ error: "onboarded must be a boolean" });
+      return res.status(400).json({ error: "First name, last name and username are required" });
     }
-  }
-
-  if (!firstName || !lastName || !username) {
-    await cleanupFile(req.file);
-    return res.status(400).json({ error: "First name, last name and username are required" });
-  }
-  if ([firstName, lastName, username].some((v) => v.length < 3)) {
-    await cleanupFile(req.file);
-    return res.status(400).json({ error: "Each field must be at least 3 characters" });
-  }
-
-  const id = req.auth!.payload.sub!;
-  const profileImage = req.file ? `/uploads/${req.file.filename}` : undefined;
-
-  try {
-    let oldProfileImage: string | null = null;
-    if (profileImage) {
-      const [current] = await db.select({ profileImage: users.profileImage }).from(users).where(eq(users.id, id));
-      oldProfileImage = current?.profileImage ?? null;
-    }
-
-    const [user] = await db
-      .update(users)
-      .set({
-        firstName,
-        lastName,
-        username,
-        ...(onboarded !== undefined && { onboarded }),
-        ...(profileImage !== undefined && { profileImage }),
-      })
-      .where(eq(users.id, id))
-      .returning();
-
-    if (oldProfileImage) {
-      fs.unlink(path.join("uploads", path.basename(oldProfileImage)), () => {});
-    }
-
-    res.status(200).json(user);
-  } catch (err: any) {
-    if (err.constraint === "users_username_unique") {
+    if ([firstName, lastName, username].some((v) => v.length < 3)) {
       await cleanupFile(req.file);
-      return res.status(409).json({ error: "Username already taken" });
+      return res.status(400).json({ error: "Each field must be at least 3 characters" });
     }
-    throw err;
+
+    const id = req.auth!.payload.sub!;
+    const profileImage = req.file ? `/uploads/${req.file.filename}` : undefined;
+
+    try {
+      let oldProfileImage: string | null = null;
+      if (profileImage) {
+        const [current] = await db
+          .select({ profileImage: users.profileImage })
+          .from(users)
+          .where(eq(users.id, id));
+        oldProfileImage = current?.profileImage ?? null;
+      }
+
+      const [user] = await db
+        .update(users)
+        .set({
+          firstName,
+          lastName,
+          username,
+          ...(onboarded !== undefined && { onboarded }),
+          ...(profileImage !== undefined && { profileImage }),
+        })
+        .where(eq(users.id, id))
+        .returning();
+
+      if (oldProfileImage) {
+        fs.unlink(path.join("uploads", path.basename(oldProfileImage)), () => {});
+      }
+
+      res.status(200).json(user);
+    } catch (err: any) {
+      if (err.constraint === "users_username_unique") {
+        await cleanupFile(req.file);
+        return res.status(409).json({ error: "Username already taken" });
+      }
+      throw err;
+    }
   }
-});
+);

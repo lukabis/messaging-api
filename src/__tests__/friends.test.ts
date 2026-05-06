@@ -68,23 +68,31 @@ describe("Friends API", () => {
     });
 
     it("returns 400 if status invalid", async () => {
-      const res = await request(app).patch("/api/friend-requests/user-2").send({ status: "INVALID" });
+      const res = await request(app)
+        .patch("/api/friend-requests/user-2")
+        .send({ status: "INVALID" });
       expect(res.status).toBe(400);
     });
 
     it("returns 404 if request not found", async () => {
-      const res = await request(app).patch("/api/friend-requests/user-3").send({ status: "ACCEPTED" });
+      const res = await request(app)
+        .patch("/api/friend-requests/user-3")
+        .send({ status: "ACCEPTED" });
       expect(res.status).toBe(404);
     });
 
     it("returns 200 and ACCEPTED status", async () => {
-      const res = await request(app).patch("/api/friend-requests/user-2").send({ status: "ACCEPTED" });
+      const res = await request(app)
+        .patch("/api/friend-requests/user-2")
+        .send({ status: "ACCEPTED" });
       expect(res.status).toBe(200);
       expect(res.body.status).toBe("ACCEPTED");
     });
 
     it("returns 200 and DECLINED status", async () => {
-      const res = await request(app).patch("/api/friend-requests/user-2").send({ status: "DECLINED" });
+      const res = await request(app)
+        .patch("/api/friend-requests/user-2")
+        .send({ status: "DECLINED" });
       expect(res.status).toBe(200);
       expect(res.body.status).toBe("DECLINED");
     });
@@ -98,7 +106,9 @@ describe("Friends API", () => {
     });
 
     it("returns friends from sent accepted requests", async () => {
-      await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
+      await db
+        .insert(friendRequests)
+        .values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
       const res = await request(app).get("/api/friends");
       expect(res.status).toBe(200);
       expect(res.body).toHaveLength(1);
@@ -106,7 +116,9 @@ describe("Friends API", () => {
     });
 
     it("returns friends from received accepted requests", async () => {
-      await db.insert(friendRequests).values({ fromUser: "user-2", toUser: "user-1", status: "ACCEPTED" });
+      await db
+        .insert(friendRequests)
+        .values({ fromUser: "user-2", toUser: "user-1", status: "ACCEPTED" });
       const res = await request(app).get("/api/friends");
       expect(res.status).toBe(200);
       expect(res.body).toHaveLength(1);
@@ -121,7 +133,9 @@ describe("Friends API", () => {
     });
 
     it("does not return DECLINED requests", async () => {
-      await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2", status: "DECLINED" });
+      await db
+        .insert(friendRequests)
+        .values({ fromUser: "user-1", toUser: "user-2", status: "DECLINED" });
       const res = await request(app).get("/api/friends");
       expect(res.status).toBe(200);
       expect(res.body).toEqual([]);

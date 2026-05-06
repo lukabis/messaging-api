@@ -22,7 +22,8 @@ app.use((err: Error & { code?: string }, _req: Request, res: Response, next: Nex
     return res.status(401).json({ error: "Invalid or missing token" });
   }
   if (err instanceof multer.MulterError) {
-    if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "File too large. Max 5MB." });
+    if (err.code === "LIMIT_FILE_SIZE")
+      return res.status(400).json({ error: "File too large. Max 5MB." });
     return res.status(400).json({ error: err.message });
   }
   if (err.message === "Images only") return res.status(400).json({ error: "Images only" });

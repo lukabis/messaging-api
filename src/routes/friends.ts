@@ -33,10 +33,7 @@ friendsRouter.post("/friend-requests", checkJwt, async (req: Request, res: Respo
   }
 
   try {
-    const [request] = await db
-      .insert(friendRequests)
-      .values({ fromUser, toUser })
-      .returning();
+    const [request] = await db.insert(friendRequests).values({ fromUser, toUser }).returning();
 
     res.status(201).json(request);
   } catch (err: any) {
@@ -73,11 +70,13 @@ friendsRouter.get("/friends", checkJwt, async (req: Request, res: Response) => {
   const id = req.auth!.payload.sub! as string;
 
   const [sent, received] = await Promise.all([
-    db.select({ friend: users })
+    db
+      .select({ friend: users })
       .from(friendRequests)
       .innerJoin(users, eq(users.id, friendRequests.toUser))
       .where(and(eq(friendRequests.fromUser, id), eq(friendRequests.status, "ACCEPTED"))),
-    db.select({ friend: users })
+    db
+      .select({ friend: users })
       .from(friendRequests)
       .innerJoin(users, eq(users.id, friendRequests.fromUser))
       .where(and(eq(friendRequests.toUser, id), eq(friendRequests.status, "ACCEPTED"))),

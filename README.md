@@ -43,4 +43,3 @@ Update `DATABASE_URL` in `.env.test` if your connection requires a username or p
 ```bash
 npm test
 ```
-

@@ -49,12 +49,8 @@
           "name": "friend_requests_from_user_users_sub_fk",
           "tableFrom": "friend_requests",
           "tableTo": "users",
-          "columnsFrom": [
-            "from_user"
-          ],
-          "columnsTo": [
-            "sub"
-          ],
+          "columnsFrom": ["from_user"],
+          "columnsTo": ["sub"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -62,12 +58,8 @@
           "name": "friend_requests_to_user_users_sub_fk",
           "tableFrom": "friend_requests",
           "tableTo": "users",
-          "columnsFrom": [
-            "to_user"
-          ],
-          "columnsTo": [
-            "sub"
-          ],
+          "columnsFrom": ["to_user"],
+          "columnsTo": ["sub"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -77,10 +69,7 @@
         "friend_requests_from_user_to_user_unique": {
           "name": "friend_requests_from_user_to_user_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "from_user",
-            "to_user"
-          ]
+          "columns": ["from_user", "to_user"]
         }
       },
       "policies": {},
@@ -142,9 +131,7 @@
         "users_username_unique": {
           "name": "users_username_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         }
       },
       "policies": {},
@@ -156,11 +143,7 @@
     "public.friend_request_status": {
       "name": "friend_request_status",
       "schema": "public",
-      "values": [
-        "PENDING",
-        "ACCEPTED",
-        "DECLINED"
-      ]
+      "values": ["PENDING", "ACCEPTED", "DECLINED"]
     }
   },
   "schemas": {},
