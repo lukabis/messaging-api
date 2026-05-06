@@ -24,3 +24,23 @@ Apply pending migrations to the database:
 npx drizzle-kit migrate
 ```
 
+## Testing
+
+Tests use Vitest + Supertest against a real PostgreSQL test database.
+
+### One-time setup
+
+Create the test database. Run this inside the pgsql container:
+
+```bash
+createdb -U postgres myapp_test
+```
+
+Update `DATABASE_URL` in `.env.test` if your connection requires a username or password.
+
+### Running tests
+
+```bash
+npm test
+```
+
