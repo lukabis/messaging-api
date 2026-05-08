@@ -121,7 +121,7 @@ userRouter.patch(
 
       res.status(200).json(user);
     } catch (err: any) {
-      if (err.constraint === "users_username_unique") {
+      if (err.cause?.constraint === "users_username_unique") {
         await cleanupFile(req.file);
         return res.status(409).json({ error: "Username already taken" });
       }

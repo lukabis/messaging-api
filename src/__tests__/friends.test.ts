@@ -4,14 +4,9 @@ import { app } from "../app.js";
 import { db } from "../db.js";
 import { users, friendRequests } from "../schema.js";
 
-const mockAuth = vi.hoisted(() => ({ userId: "user-1" }));
+import { mockAuth } from "../__mocks__/middleware.js";
 
-vi.mock("../middleware.js", () => ({
-  checkJwt: (req: any, _res: any, next: any) => {
-    req.auth = { payload: { sub: mockAuth.userId } };
-    next();
-  },
-}));
+vi.mock("../middleware.js");
 
 async function seedUser(id: string) {
   await db.insert(users).values({ id, email: `${id}@test.com` });
