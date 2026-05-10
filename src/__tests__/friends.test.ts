@@ -8,8 +8,8 @@ import { mockAuth } from "../__mocks__/middleware.js";
 
 vi.mock("../middleware.js");
 
-async function seedUser(id: string) {
-  await db.insert(users).values({ id, email: `${id}@test.com` });
+async function seedUser(id: string, profile?: { firstName?: string; lastName?: string; username?: string }) {
+  await db.insert(users).values({ id, email: `${id}@test.com`, ...profile });
 }
 
 describe("Friends API", () => {
@@ -135,5 +135,118 @@ describe("Friends API", () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual([]);
     });
+  });
+});
+
+describe("GET /api/friends/search", () => {
+  beforeEach(async () => {
+    mockAuth.userId = "user-1";
+    await seedUser("user-1", { firstName: "Current", lastName: "User", username: "current_user" });
+    await seedUser("user-2", { firstName: "Alice", lastName: "Smith", username: "alice_smith" });
+    await seedUser("user-3", { firstName: "Bob", lastName: "Jones", username: "bob_jones" });
+  });
+
+  afterEach(async () => {
+    await db.delete(friendRequests);
+    await db.delete(users);
+  });
+
+  it("returns [] if q is missing", async () => {
+    const res = await request(app).get("/api/friends/search");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns [] if q is 1 char", async () => {
+    const res = await request(app).get("/api/friends/search?q=a");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns [] if q is 2 chars", async () => {
+    const res = await request(app).get("/api/friends/search?q=al");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns [] if q has 3+ chars but no match", async () => {
+    const res = await request(app).get("/api/friends/search?q=xyz");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("matches by firstName", async () => {
+    const res = await request(app).get("/api/friends/search?q=Ali");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].id).toBe("user-2");
+  });
+
+  it("matches by lastName", async () => {
+    const res = await request(app).get("/api/friends/search?q=Jon");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].id).toBe("user-3");
+  });
+
+  it("matches by username", async () => {
+    const res = await request(app).get("/api/friends/search?q=alice_sm");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].id).toBe("user-2");
+  });
+
+  it("match is case-insensitive", async () => {
+    const res = await request(app).get("/api/friends/search?q=ALICE");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].id).toBe("user-2");
+  });
+
+  it("does not return the authenticated user even if name matches", async () => {
+    const res = await request(app).get("/api/friends/search?q=cur");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns relationship not_friends when no request exists", async () => {
+    const res = await request(app).get("/api/friends/search?q=Ali");
+    expect(res.status).toBe(200);
+    expect(res.body[0].relationship).toBe("not_friends");
+  });
+
+  it("returns relationship friends when request is ACCEPTED", async () => {
+    await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
+    const res = await request(app).get("/api/friends/search?q=Ali");
+    expect(res.status).toBe(200);
+    expect(res.body[0].relationship).toBe("friends");
+  });
+
+  it("returns relationship friends when received request is ACCEPTED", async () => {
+    await db.insert(friendRequests).values({ fromUser: "user-2", toUser: "user-1", status: "ACCEPTED" });
+    const res = await request(app).get("/api/friends/search?q=Ali");
+    expect(res.status).toBe(200);
+    expect(res.body[0].relationship).toBe("friends");
+  });
+
+  it("returns relationship pending_sent when current user sent PENDING request", async () => {
+    await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2" });
+    const res = await request(app).get("/api/friends/search?q=Ali");
+    expect(res.status).toBe(200);
+    expect(res.body[0].relationship).toBe("pending_sent");
+  });
+
+  it("returns relationship pending_received when other user sent PENDING request", async () => {
+    await db.insert(friendRequests).values({ fromUser: "user-2", toUser: "user-1" });
+    const res = await request(app).get("/api/friends/search?q=Ali");
+    expect(res.status).toBe(200);
+    expect(res.body[0].relationship).toBe("pending_received");
+  });
+
+  it("returns relationship not_friends when request is DECLINED", async () => {
+    await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2", status: "DECLINED" });
+    const res = await request(app).get("/api/friends/search?q=Ali");
+    expect(res.status).toBe(200);
+    expect(res.body[0].relationship).toBe("not_friends");
   });
 });
