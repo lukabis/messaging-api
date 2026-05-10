@@ -8,7 +8,10 @@ import { mockAuth } from "../__mocks__/middleware.js";
 
 vi.mock("../middleware.js");
 
-async function seedUser(id: string, profile?: { firstName?: string; lastName?: string; username?: string }) {
+async function seedUser(
+  id: string,
+  profile?: { firstName?: string; lastName?: string; username?: string }
+) {
   await db.insert(users).values({ id, email: `${id}@test.com`, ...profile });
 }
 
@@ -216,14 +219,18 @@ describe("GET /api/friends/search", () => {
   });
 
   it("returns relationship friends when request is ACCEPTED", async () => {
-    await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
+    await db
+      .insert(friendRequests)
+      .values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
     const res = await request(app).get("/api/friends/search?q=Ali");
     expect(res.status).toBe(200);
     expect(res.body[0].relationship).toBe("friends");
   });
 
   it("returns relationship friends when received request is ACCEPTED", async () => {
-    await db.insert(friendRequests).values({ fromUser: "user-2", toUser: "user-1", status: "ACCEPTED" });
+    await db
+      .insert(friendRequests)
+      .values({ fromUser: "user-2", toUser: "user-1", status: "ACCEPTED" });
     const res = await request(app).get("/api/friends/search?q=Ali");
     expect(res.status).toBe(200);
     expect(res.body[0].relationship).toBe("friends");
@@ -244,7 +251,9 @@ describe("GET /api/friends/search", () => {
   });
 
   it("returns relationship not_friends when request is DECLINED", async () => {
-    await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2", status: "DECLINED" });
+    await db
+      .insert(friendRequests)
+      .values({ fromUser: "user-1", toUser: "user-2", status: "DECLINED" });
     const res = await request(app).get("/api/friends/search?q=Ali");
     expect(res.status).toBe(200);
     expect(res.body[0].relationship).toBe("not_friends");
