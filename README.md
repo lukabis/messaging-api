@@ -36,7 +36,6 @@ Create the test database:
 docker exec api-db-1 psql -U postgres -c "CREATE DATABASE app_test"
 ```
 
-
 ### Running tests
 
 ```bash
