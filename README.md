@@ -30,10 +30,10 @@ Tests use Vitest + Supertest against a real PostgreSQL test database.
 
 ### One-time setup
 
-Create the test database. Run this inside the pgsql container:
+Create the test database:
 
 ```bash
-createdb -U postgres myapp_test
+docker exec api-db-1 psql -U postgres -c "CREATE DATABASE app_test"
 ```
 
 Update `DATABASE_URL` in `.env.test` if your connection requires a username or password.
