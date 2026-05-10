@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, ilike, inArray, ne, or } from "drizzle-orm";
 import { db } from "../db.js";
 import { friendRequests, users } from "../schema.js";
 import { checkJwt } from "../middleware.js";
@@ -64,6 +64,68 @@ friendsRouter.patch("/friend-requests/:fromUser", checkJwt, async (req: Request,
   }
 
   res.status(200).json(updated);
+});
+
+type RelationshipStatus = "friends" | "pending_sent" | "pending_received" | "not_friends";
+
+friendsRouter.get("/friends/search", checkJwt, async (req: Request, res: Response) => {
+  const currentUserId = req.auth!.payload.sub! as string;
+  const q = (req.query.q as string) ?? "";
+
+  if (q.length <= 2) {
+    return res.status(200).json([]);
+  }
+
+  const matchedUsers = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        ne(users.id, currentUserId),
+        or(
+          ilike(users.firstName, `%${q}%`),
+          ilike(users.lastName, `%${q}%`),
+          ilike(users.username, `%${q}%`)
+        )
+      )
+    );
+
+  if (matchedUsers.length === 0) {
+    return res.status(200).json([]);
+  }
+
+  const matchedIds = matchedUsers.map((u) => u.id);
+
+  const requests = await db
+    .select()
+    .from(friendRequests)
+    .where(
+      or(
+        and(eq(friendRequests.fromUser, currentUserId), inArray(friendRequests.toUser, matchedIds)),
+        and(eq(friendRequests.toUser, currentUserId), inArray(friendRequests.fromUser, matchedIds))
+      )
+    );
+
+  const result = matchedUsers.map((user) => {
+    const request = requests.find(
+      (r) =>
+        (r.fromUser === currentUserId && r.toUser === user.id) ||
+        (r.fromUser === user.id && r.toUser === currentUserId)
+    );
+
+    let relationship: RelationshipStatus = "not_friends";
+    if (request) {
+      if (request.status === "ACCEPTED") {
+        relationship = "friends";
+      } else if (request.status === "PENDING") {
+        relationship = request.fromUser === currentUserId ? "pending_sent" : "pending_received";
+      }
+    }
+
+    return { ...user, relationship };
+  });
+
+  res.status(200).json(result);
 });
 
 friendsRouter.get("/friends", checkJwt, async (req: Request, res: Response) => {
