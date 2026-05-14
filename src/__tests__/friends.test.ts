@@ -111,6 +111,32 @@ describe("Friends API", () => {
     });
   });
 
+  describe("DELETE /api/friend-requests/:fromUser", () => {
+    beforeEach(async () => {
+      await db.insert(friendRequests).values({ fromUser: "user-2", toUser: "user-1" });
+    });
+
+    it("returns 404 if request does not exist", async () => {
+      const res = await request(app).delete("/api/friend-requests/user-3");
+      expect(res.status).toBe(404);
+      expect(res.body.error).toBe("Friend request not found");
+    });
+
+    it("returns 200 and the deleted record when request exists", async () => {
+      const res = await request(app).delete("/api/friend-requests/user-2");
+      expect(res.status).toBe(200);
+      expect(res.body.fromUser).toBe("user-2");
+      expect(res.body.toUser).toBe("user-1");
+    });
+
+    it("record is no longer present after deletion", async () => {
+      await request(app).delete("/api/friend-requests/user-2");
+      const res = await request(app).delete("/api/friend-requests/user-2");
+      expect(res.status).toBe(404);
+      expect(res.body.error).toBe("Friend request not found");
+    });
+  });
+
   describe("GET /api/friends", () => {
     it("returns empty array if no accepted requests", async () => {
       const res = await request(app).get("/api/friends");

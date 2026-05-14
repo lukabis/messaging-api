@@ -78,6 +78,22 @@ friendsRouter.patch("/friend-requests/:fromUser", checkJwt, async (req: Request,
 
 type RelationshipStatus = "friends" | "pending_sent" | "pending_received" | "not_friends";
 
+friendsRouter.delete("/friend-requests/:fromUser", checkJwt, async (req: Request, res: Response) => {
+  const toUser = req.auth!.payload.sub! as string;
+  const fromUser = req.params.fromUser as string;
+
+  const [deleted] = await db
+    .delete(friendRequests)
+    .where(and(eq(friendRequests.fromUser, fromUser), eq(friendRequests.toUser, toUser)))
+    .returning();
+
+  if (!deleted) {
+    return res.status(404).json({ error: "Friend request not found" });
+  }
+
+  res.status(200).json(deleted);
+});
+
 friendsRouter.get("/friends/search", checkJwt, async (req: Request, res: Response) => {
   const currentUserId = req.auth!.payload.sub! as string;
   const q = (req.query.q as string) ?? "";
