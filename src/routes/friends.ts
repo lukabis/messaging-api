@@ -47,10 +47,10 @@ friendsRouter.post("/friend-requests", checkJwt, async (req: Request, res: Respo
 friendsRouter.patch("/friend-requests/:fromUser", checkJwt, async (req: Request, res: Response) => {
   const toUser = req.auth!.payload.sub! as string;
   const fromUser = req.params.fromUser as string;
-  const status: "ACCEPTED" | "DECLINED" | undefined = req.body.status;
+  const status: "ACCEPTED" | undefined = req.body.status;
 
-  if (status !== "ACCEPTED" && status !== "DECLINED") {
-    return res.status(400).json({ error: "status must be ACCEPTED or DECLINED" });
+  if (status !== "ACCEPTED") {
+    return res.status(400).json({ error: "status must be ACCEPTED" });
   }
 
   const [updated] = await db

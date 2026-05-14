@@ -3,7 +3,6 @@ import { pgTable, pgEnum, text, boolean, timestamp, unique } from "drizzle-orm/p
 export const friendRequestStatusEnum = pgEnum("friend_request_status", [
   "PENDING",
   "ACCEPTED",
-  "DECLINED",
 ]);
 
 export const users = pgTable("users", {

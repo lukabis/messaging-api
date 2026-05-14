@@ -43,6 +43,13 @@
       "when": 1777730257893,
       "tag": "0005_spotty_hex",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778702355390,
+      "tag": "0006_wild_sprite",
+      "breakpoints": true
     }
   ]
 }
