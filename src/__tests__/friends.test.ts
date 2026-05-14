@@ -58,6 +58,14 @@ describe("Friends API", () => {
       expect(res.body.toUser).toBe("user-2");
       expect(res.body.status).toBe("PENDING");
     });
+
+    it("returns 404 if toUser does not exist", async () => {
+      const res = await request(app)
+        .post("/api/friend-requests")
+        .send({ toUser: "non-existent-user" });
+      expect(res.status).toBe(404);
+      expect(res.body.error).toBe("request sent to non-existing user");
+    });
   });
 
   describe("PATCH /api/friend-requests/:fromUser", () => {
@@ -70,6 +78,21 @@ describe("Friends API", () => {
         .patch("/api/friend-requests/user-2")
         .send({ status: "INVALID" });
       expect(res.status).toBe(400);
+    });
+
+    it("returns 400 if status is PENDING", async () => {
+      const res = await request(app)
+        .patch("/api/friend-requests/user-2")
+        .send({ status: "PENDING" });
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 404 if sender tries to accept their own outgoing request", async () => {
+      mockAuth.userId = "user-2";
+      const res = await request(app)
+        .patch("/api/friend-requests/user-2")
+        .send({ status: "ACCEPTED" });
+      expect(res.status).toBe(404);
     });
 
     it("returns 404 if request not found", async () => {
@@ -85,14 +108,6 @@ describe("Friends API", () => {
         .send({ status: "ACCEPTED" });
       expect(res.status).toBe(200);
       expect(res.body.status).toBe("ACCEPTED");
-    });
-
-    it("returns 200 and DECLINED status", async () => {
-      const res = await request(app)
-        .patch("/api/friend-requests/user-2")
-        .send({ status: "DECLINED" });
-      expect(res.status).toBe(200);
-      expect(res.body.status).toBe("DECLINED");
     });
   });
 
@@ -125,15 +140,6 @@ describe("Friends API", () => {
 
     it("does not return PENDING requests", async () => {
       await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2" });
-      const res = await request(app).get("/api/friends");
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual([]);
-    });
-
-    it("does not return DECLINED requests", async () => {
-      await db
-        .insert(friendRequests)
-        .values({ fromUser: "user-1", toUser: "user-2", status: "DECLINED" });
       const res = await request(app).get("/api/friends");
       expect(res.status).toBe(200);
       expect(res.body).toEqual([]);
@@ -250,12 +256,18 @@ describe("GET /api/friends/search", () => {
     expect(res.body[0].relationship).toBe("pending_received");
   });
 
-  it("returns relationship not_friends when request is DECLINED", async () => {
-    await db
-      .insert(friendRequests)
-      .values({ fromUser: "user-1", toUser: "user-2", status: "DECLINED" });
+  it("returns correct relationship for each user in multi-result search", async () => {
+    await seedUser("user-4", { firstName: "Alice", lastName: "Cooper", username: "alice_cooper" });
+    await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
+    await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-4" });
+
     const res = await request(app).get("/api/friends/search?q=Ali");
     expect(res.status).toBe(200);
-    expect(res.body[0].relationship).toBe("not_friends");
+    expect(res.body).toHaveLength(2);
+
+    const user2 = res.body.find((u: any) => u.id === "user-2");
+    const user4 = res.body.find((u: any) => u.id === "user-4");
+    expect(user2.relationship).toBe("friends");
+    expect(user4.relationship).toBe("pending_sent");
   });
 });

@@ -17,6 +17,16 @@ friendsRouter.post("/friend-requests", checkJwt, async (req: Request, res: Respo
     return res.status(400).json({ error: "Cannot send a friend request to yourself" });
   }
 
+  const [targetUser] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.id, toUser))
+    .limit(1);
+
+  if (!targetUser) {
+    return res.status(404).json({ error: "request sent to non-existing user" });
+  }
+
   const [existing] = await db
     .select()
     .from(friendRequests)
