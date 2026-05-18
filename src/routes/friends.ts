@@ -154,6 +154,18 @@ friendsRouter.get("/friends/search", checkJwt, async (req: Request, res: Respons
   res.status(200).json(result);
 });
 
+friendsRouter.get("/friend-requests", checkJwt, async (req: Request, res: Response) => {
+  const id = req.auth!.payload.sub! as string;
+
+  const pending = await db
+    .select({ user: users })
+    .from(friendRequests)
+    .innerJoin(users, eq(users.id, friendRequests.fromUser))
+    .where(and(eq(friendRequests.toUser, id), eq(friendRequests.status, "PENDING")));
+
+  res.status(200).json(pending.map(({ user }) => user));
+});
+
 friendsRouter.get("/friends", checkJwt, async (req: Request, res: Response) => {
   const id = req.auth!.payload.sub! as string;
 

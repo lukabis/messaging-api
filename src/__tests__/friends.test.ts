@@ -297,3 +297,70 @@ describe("GET /api/friends/search", () => {
     expect(user4.relationship).toBe("pending_sent");
   });
 });
+
+describe("GET /api/friend-requests", () => {
+  beforeEach(async () => {
+    mockAuth.userId = "user-1";
+    await seedUser("user-1", { firstName: "Current", lastName: "User", username: "current_user" });
+    await seedUser("user-2", { firstName: "Alice", lastName: "Smith", username: "alice_smith" });
+    await seedUser("user-3", { firstName: "Bob", lastName: "Jones", username: "bob_jones" });
+  });
+
+  afterEach(async () => {
+    await db.delete(friendRequests);
+    await db.delete(users);
+  });
+
+  it("returns [] when no pending requests exist", async () => {
+    const res = await request(app).get("/api/friend-requests");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns sender's user object for a single incoming PENDING request", async () => {
+    await db.insert(friendRequests).values({ fromUser: "user-2", toUser: "user-1" });
+    const res = await request(app).get("/api/friend-requests");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].id).toBe("user-2");
+  });
+
+  it("returns multiple senders when multiple incoming PENDING requests exist", async () => {
+    await db.insert(friendRequests).values({ fromUser: "user-2", toUser: "user-1" });
+    await db.insert(friendRequests).values({ fromUser: "user-3", toUser: "user-1" });
+    const res = await request(app).get("/api/friend-requests");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    const ids = res.body.map((u: any) => u.id);
+    expect(ids).toContain("user-2");
+    expect(ids).toContain("user-3");
+  });
+
+  it("does not return ACCEPTED requests", async () => {
+    await db.insert(friendRequests).values({ fromUser: "user-2", toUser: "user-1", status: "ACCEPTED" });
+    const res = await request(app).get("/api/friend-requests");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("does not return outgoing requests sent by current user", async () => {
+    await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2" });
+    const res = await request(app).get("/api/friend-requests");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns user object shape (not the friend_request row)", async () => {
+    await db.insert(friendRequests).values({ fromUser: "user-2", toUser: "user-1" });
+    const res = await request(app).get("/api/friend-requests");
+    expect(res.status).toBe(200);
+    const user = res.body[0];
+    expect(user.id).toBe("user-2");
+    expect(user.username).toBe("alice_smith");
+    expect(user.firstName).toBe("Alice");
+    expect(user.lastName).toBe("Smith");
+    expect(user).not.toHaveProperty("fromUser");
+    expect(user).not.toHaveProperty("toUser");
+    expect(user).not.toHaveProperty("status");
+  });
+});
