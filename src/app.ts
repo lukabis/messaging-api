@@ -3,6 +3,7 @@ import cors from "cors";
 import multer from "multer";
 import { userRouter } from "./routes/user.js";
 import { friendsRouter } from "./routes/friends.js";
+import { messagesRouter } from "./routes/messages.js";
 
 export const app = express();
 
@@ -16,6 +17,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 
 app.use("/api", userRouter);
 app.use("/api", friendsRouter);
+app.use("/api", messagesRouter);
 
 app.use((err: Error & { code?: string }, _req: Request, res: Response, next: NextFunction) => {
   if (err.code === "invalid_token") {
