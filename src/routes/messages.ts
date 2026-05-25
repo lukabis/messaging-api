@@ -8,7 +8,7 @@ export const messagesRouter = express.Router();
 
 messagesRouter.get("/messages/:friendId", checkJwt, async (req: Request, res: Response) => {
   const currentUserId = req.auth!.payload.sub! as string;
-  const { friendId } = req.params;
+  const friendId = req.params.friendId as string;
 
   const [friendship] = await db
     .select()
