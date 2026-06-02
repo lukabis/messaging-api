@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, text, boolean, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, text, boolean, timestamp, unique, serial } from "drizzle-orm/pg-core";
 
 export const friendRequestStatusEnum = pgEnum("friend_request_status", [
   "PENDING",
@@ -30,3 +30,13 @@ export const friendRequests = pgTable(
   },
   (t) => [unique().on(t.fromUser, t.toUser)]
 );
+
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  fromUserId: text("from_user_id").notNull().references(() => users.id),
+  toUserId: text("to_user_id").notNull().references(() => users.id),
+  read: boolean("read").notNull().default(false),
+  text: text("text").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  readAt: timestamp("read_at"),
+});
