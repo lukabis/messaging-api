@@ -49,12 +49,8 @@
           "name": "friend_requests_from_user_users_id_fk",
           "tableFrom": "friend_requests",
           "tableTo": "users",
-          "columnsFrom": [
-            "from_user"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["from_user"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -62,12 +58,8 @@
           "name": "friend_requests_to_user_users_id_fk",
           "tableFrom": "friend_requests",
           "tableTo": "users",
-          "columnsFrom": [
-            "to_user"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["to_user"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -77,10 +69,7 @@
         "friend_requests_from_user_to_user_unique": {
           "name": "friend_requests_from_user_to_user_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "from_user",
-            "to_user"
-          ]
+          "columns": ["from_user", "to_user"]
         }
       },
       "policies": {},
@@ -142,12 +131,8 @@
           "name": "messages_from_user_id_users_id_fk",
           "tableFrom": "messages",
           "tableTo": "users",
-          "columnsFrom": [
-            "from_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["from_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -155,12 +140,8 @@
           "name": "messages_to_user_id_users_id_fk",
           "tableFrom": "messages",
           "tableTo": "users",
-          "columnsFrom": [
-            "to_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["to_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -226,9 +207,7 @@
         "users_username_unique": {
           "name": "users_username_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         }
       },
       "policies": {},
@@ -240,10 +219,7 @@
     "public.friend_request_status": {
       "name": "friend_request_status",
       "schema": "public",
-      "values": [
-        "PENDING",
-        "ACCEPTED"
-      ]
+      "values": ["PENDING", "ACCEPTED"]
     }
   },
   "schemas": {},

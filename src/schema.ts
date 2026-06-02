@@ -1,9 +1,6 @@
 import { pgTable, pgEnum, text, boolean, timestamp, unique, serial } from "drizzle-orm/pg-core";
 
-export const friendRequestStatusEnum = pgEnum("friend_request_status", [
-  "PENDING",
-  "ACCEPTED",
-]);
+export const friendRequestStatusEnum = pgEnum("friend_request_status", ["PENDING", "ACCEPTED"]);
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -33,8 +30,12 @@ export const friendRequests = pgTable(
 
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
-  fromUserId: text("from_user_id").notNull().references(() => users.id),
-  toUserId: text("to_user_id").notNull().references(() => users.id),
+  fromUserId: text("from_user_id")
+    .notNull()
+    .references(() => users.id),
+  toUserId: text("to_user_id")
+    .notNull()
+    .references(() => users.id),
   read: boolean("read").notNull().default(false),
   text: text("text").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),

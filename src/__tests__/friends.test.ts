@@ -284,7 +284,9 @@ describe("GET /api/friends/search", () => {
 
   it("returns correct relationship for each user in multi-result search", async () => {
     await seedUser("user-4", { firstName: "Alice", lastName: "Cooper", username: "alice_cooper" });
-    await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
+    await db
+      .insert(friendRequests)
+      .values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
     await db.insert(friendRequests).values({ fromUser: "user-1", toUser: "user-4" });
 
     const res = await request(app).get("/api/friends/search?q=Ali");
@@ -337,7 +339,9 @@ describe("GET /api/friend-requests", () => {
   });
 
   it("does not return ACCEPTED requests", async () => {
-    await db.insert(friendRequests).values({ fromUser: "user-2", toUser: "user-1", status: "ACCEPTED" });
+    await db
+      .insert(friendRequests)
+      .values({ fromUser: "user-2", toUser: "user-1", status: "ACCEPTED" });
     const res = await request(app).get("/api/friend-requests");
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
