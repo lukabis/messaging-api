@@ -3,6 +3,7 @@ import { and, asc, eq, or } from "drizzle-orm";
 import { db } from "../db.js";
 import { friendRequests, messages, users } from "../schema.js";
 import { checkJwt } from "../middleware.js";
+import { clients } from "../ws.js";
 
 export const messagesRouter = express.Router();
 
@@ -85,6 +86,11 @@ messagesRouter.post("/messages/:friendId", checkJwt, async (req: Request, res: R
     .insert(messages)
     .values({ fromUserId: currentUserId, toUserId: friendId, text })
     .returning();
+
+  const recipientSocket = clients.get(friendId);
+  if (recipientSocket) {
+    recipientSocket.send(JSON.stringify(message));
+  }
 
   res.status(201).json(message);
 });
