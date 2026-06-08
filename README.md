@@ -17,14 +17,14 @@ REST + WebSocket API for the [Chat App](https://github.com/lukabis/messaging-app
 
 ## Tech Stack
 
-| | |
-|---|---|
-| Runtime | Node.js >=23.4.0 |
-| Framework | Express 4 |
-| Database | PostgreSQL + Drizzle ORM |
-| Auth | Auth0 JWT (`express-oauth2-jwt-bearer`) |
-| Real-time | WebSockets (`ws`) |
-| Testing | Vitest + Supertest |
+|           |                                         |
+| --------- | --------------------------------------- |
+| Runtime   | Node.js >=23.4.0                        |
+| Framework | Express 4                               |
+| Database  | PostgreSQL + Drizzle ORM                |
+| Auth      | Auth0 JWT (`express-oauth2-jwt-bearer`) |
+| Real-time | WebSockets (`ws`)                       |
+| Testing   | Vitest + Supertest                      |
 
 ## Frontend
 

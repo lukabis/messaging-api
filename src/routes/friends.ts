@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
-import { and, eq, ilike, inArray, ne, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, ne, or } from "drizzle-orm";
 import { db } from "../db.js";
-import { friendRequests, users } from "../schema.js";
+import { friendRequests, messages, users } from "../schema.js";
 import { checkJwt } from "../middleware.js";
 
 export const friendsRouter = express.Router();
@@ -186,5 +186,36 @@ friendsRouter.get("/friends", checkJwt, async (req: Request, res: Response) => {
       .where(and(eq(friendRequests.toUser, id), eq(friendRequests.status, "ACCEPTED"))),
   ]);
 
-  res.status(200).json([...sent, ...received].map(({ friend }) => friend));
+  const friends = [...sent, ...received].map(({ friend }) => friend);
+  const friendIds = friends.map((f) => f.id);
+
+  if (friendIds.length === 0) {
+    return res.status(200).json([]);
+  }
+
+  const recentMessages = await db
+    .select()
+    .from(messages)
+    .where(
+      or(
+        and(eq(messages.fromUserId, id), inArray(messages.toUserId, friendIds)),
+        and(inArray(messages.fromUserId, friendIds), eq(messages.toUserId, id))
+      )
+    )
+    .orderBy(desc(messages.createdAt));
+
+  const lastMessageMap = new Map<string, { text: string; sentAt: Date }>();
+  for (const msg of recentMessages) {
+    const friendId = msg.fromUserId === id ? msg.toUserId : msg.fromUserId;
+    if (!lastMessageMap.has(friendId)) {
+      lastMessageMap.set(friendId, { text: msg.text, sentAt: msg.createdAt });
+    }
+  }
+
+  res.status(200).json(
+    friends.map((friend) => ({
+      ...friend,
+      lastMessage: lastMessageMap.get(friend.id) ?? null,
+    }))
+  );
 });

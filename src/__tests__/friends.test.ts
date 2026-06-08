@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
 import { app } from "../app.js";
 import { db } from "../db.js";
-import { users, friendRequests } from "../schema.js";
+import { users, friendRequests, messages } from "../schema.js";
 
 import { mockAuth } from "../__mocks__/middleware.js";
 
@@ -138,6 +138,10 @@ describe("Friends API", () => {
   });
 
   describe("GET /api/friends", () => {
+    afterEach(async () => {
+      await db.delete(messages);
+    });
+
     it("returns empty array if no accepted requests", async () => {
       const res = await request(app).get("/api/friends");
       expect(res.status).toBe(200);
@@ -169,6 +173,55 @@ describe("Friends API", () => {
       const res = await request(app).get("/api/friends");
       expect(res.status).toBe(200);
       expect(res.body).toEqual([]);
+    });
+
+    it("lastMessage is null when no messages exist", async () => {
+      await db
+        .insert(friendRequests)
+        .values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
+      const res = await request(app).get("/api/friends");
+      expect(res.status).toBe(200);
+      expect(res.body[0].lastMessage).toBeNull();
+    });
+
+    it("lastMessage returns text and sentAt of the single message", async () => {
+      await db
+        .insert(friendRequests)
+        .values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
+      await db.insert(messages).values({ fromUserId: "user-1", toUserId: "user-2", text: "hello" });
+      const res = await request(app).get("/api/friends");
+      expect(res.status).toBe(200);
+      expect(res.body[0].lastMessage.text).toBe("hello");
+      expect(res.body[0].lastMessage.sentAt).toBeDefined();
+    });
+
+    it("lastMessage returns the most recent message when multiple exist", async () => {
+      await db
+        .insert(friendRequests)
+        .values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
+      await db.insert(messages).values({ fromUserId: "user-1", toUserId: "user-2", text: "older" });
+      await db.insert(messages).values({ fromUserId: "user-2", toUserId: "user-1", text: "newer" });
+      const res = await request(app).get("/api/friends");
+      expect(res.status).toBe(200);
+      expect(res.body[0].lastMessage.text).toBe("newer");
+    });
+
+    it("lastMessage is null for friend with no messages and non-null for friend with messages", async () => {
+      await db
+        .insert(friendRequests)
+        .values({ fromUser: "user-1", toUser: "user-2", status: "ACCEPTED" });
+      await db
+        .insert(friendRequests)
+        .values({ fromUser: "user-1", toUser: "user-3", status: "ACCEPTED" });
+      await db
+        .insert(messages)
+        .values({ fromUserId: "user-1", toUserId: "user-2", text: "hi user2" });
+      const res = await request(app).get("/api/friends");
+      expect(res.status).toBe(200);
+      const user2 = res.body.find((f: any) => f.id === "user-2");
+      const user3 = res.body.find((f: any) => f.id === "user-3");
+      expect(user2.lastMessage.text).toBe("hi user2");
+      expect(user3.lastMessage).toBeNull();
     });
   });
 });
